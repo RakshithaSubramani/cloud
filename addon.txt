@@ -1,0 +1,1018 @@
+
+
+Ex-1
+Basic Client-Server Communication:
+server
+import socket
+
+
+server = socket.socket()
+server.bind(("localhost", 5000))
+server.listen(1)
+
+
+print("Waiting for client...")
+
+
+conn, addr = server.accept()
+
+
+data = conn.recv(1024).decode()
+print("Received:", data)
+
+
+numbers = map(int, data.split())
+total = sum(numbers)
+
+
+conn.send(str(total).encode())
+
+
+conn.close()
+server.close()
+—---------////
+client
+import socket
+
+
+client = socket.socket()
+client.connect(("localhost", 5000))
+
+
+message = input("Enter numbers: ")
+client.send(message.encode())
+
+
+result = client.recv(1024).decode()
+
+
+print("Sum =", result)
+
+
+client.close()
+—---------------
+Enhanced Communication with Object Serialization:
+server
+import socket
+import pickle
+
+
+server = socket.socket()
+server.bind(("localhost", 5000))
+server.listen(1)
+
+
+print("Waiting for client...")
+
+
+conn, addr = server.accept()
+
+
+data = conn.recv(4096)
+obj = pickle.loads(data)
+
+
+print("Name:", obj.name)
+print("Values:", obj.values)
+
+
+total = sum(obj.values)
+
+
+response = f"Sum of values = {total}"
+conn.send(response.encode())
+
+
+conn.close()
+server.close()
+—----------------////
+Client
+import socket
+import pickle
+
+
+class DataObject:
+    def __init__(self, name, values):
+        self.name = name
+        self.values = values
+
+
+client = socket.socket()
+client.connect(("localhost", 5000))
+
+
+obj = DataObject("Numbers", [10, 20, 30])
+
+
+data = pickle.dumps(obj)
+client.send(data)
+
+
+response = client.recv(1024).decode()
+
+
+print(response)
+
+
+client.close()
+—---------------------------]
+
+
+Ex -2-RMI_Pyro4
+Pip install Pyro4
+Server
+import Pyro4
+
+
+@Pyro4.expose
+class Calculator:
+    def add_numbers(self, a, b):
+        return a + b
+
+
+    def multiply(self, a, b):
+        return a * b
+
+
+daemon = Pyro4.Daemon()
+uri = daemon.register(Calculator())
+
+
+print(uri)
+daemon.requestLoop()
+—-------////
+Client
+import Pyro4
+
+
+uri = input("Enter URI: ")
+calculator = Pyro4.Proxy(uri)
+
+
+a = int(input("Enter first number: "))
+b = int(input("Enter second number: "))
+
+
+print(calculator.add_numbers(a, b))
+print(calculator.multiply(a, b))
+—------------------------]]
+Ex -3
+1.Multiple client
+Server
+import socket
+import threading
+
+
+clients = []
+
+
+def handle_client(conn):
+    while True:
+        message = conn.recv(1024).decode()
+
+
+        if not message:
+            break
+
+
+        print("Message:", message)
+
+
+        for client in clients:
+            if client != conn:
+                client.send(message.encode())
+
+
+    clients.remove(conn)
+    conn.close()
+
+
+
+
+server = socket.socket()
+server.bind(("localhost", 5000))
+server.listen()
+
+
+print("Server started...")
+
+
+while True:
+    conn, addr = server.accept()
+    clients.append(conn)
+
+
+    print("Client connected:", addr)
+
+
+    threading.Thread(target=handle_client, args=(conn,)).start()
+—--------------////
+Client
+import socket
+import threading
+
+
+client = socket.socket()
+client.connect(("localhost", 5000))
+
+
+
+
+def receive():
+    while True:
+        message = client.recv(1024).decode()
+
+
+        if message:
+            print("\nReceived:", message)
+
+
+
+
+threading.Thread(target=receive, daemon=True).start()
+
+
+while True:
+    message = input("Enter message: ")
+    client.send(message.encode())
+—-------]]]
+Ricart agarwal:S
+processes = ["P1", "P2", "P3"]
+
+
+for p in processes:
+    print(p, "requests CS")
+    for q in processes:
+        if p != q:
+            print(p, "sends REQUEST to", q)
+            print(q, "sends REPLY to", p)
+    print(p, "enters CS")
+    print(p, "releases CS")
+—------------/////
+Token ring:S
+
+
+import time
+
+
+processes = ["P1", "P2", "P3"]
+requests = [True, True, True]
+token = 0
+
+
+for i in range(6):
+    current = processes[token]
+
+
+    print("Token is with", current)
+
+
+    if requests[token]:
+        print(current, "enters Critical Section")
+        time.sleep(1)
+        print(current, "exits Critical Section")
+        requests[token] = False
+    else:
+        print(current, "does not need Critical Section")
+
+
+    token = (token + 1) % len(processes)
+    print("Token passed to", processes[token])
+    print()
+
+
+print("Token Ring completed")
+—---------------same
+import time
+
+
+processes = ["P1", "P2", "P3", "P4"]
+
+
+for i in range(len(processes)):
+    current = processes[i]
+
+
+    print("Token is with", current)
+
+
+    print(current, "enters CS")
+    time.sleep(1)
+
+
+    print(current, "exits CS")
+
+
+    next_process = processes[(i + 1) % len(processes)]
+
+
+    print("Token passed to", next_process)
+    print()
+—-------////
+Centralized coordinator:S
+import time
+
+
+queue = ["P1", "P2", "P3"]
+
+
+for process in queue:
+
+
+    print(process, "sends REQUEST")
+
+
+    print("Coordinator sends GRANT to", process)
+
+
+    print(process, "enters CS")
+    time.sleep(1)
+
+
+    print(process, "exits CS")
+
+
+    print(process, "sends RELEASE")
+
+
+    print("Coordinator is ready for next process")
+    print()
+_______]]
+OG code :
+Ricart–Agrawala Algorithm
+Relay_server.py
+
+
+import socket
+import threading
+import json
+import sys
+
+
+N = 3
+MODE = sys.argv[1] if len(sys.argv) > 1 else "ricart"
+
+
+clients = {}
+send_locks = {}
+lock = threading.Lock()
+ready = False
+
+
+
+
+def send(pid, message):
+    with lock:
+        conn = clients.get(pid)
+        slock = send_locks.get(pid)
+
+
+    if conn:
+        try:
+            with slock:
+                conn.sendall((json.dumps(message) + "\n").encode())
+        except OSError:
+            pass
+
+
+
+
+def handle(conn):
+    global ready
+
+
+    reader = conn.makefile("r")
+    pid = None
+
+
+    try:
+        registration = json.loads(reader.readline())
+        pid = registration["pid"]
+
+
+        with lock:
+            clients[pid] = conn
+            send_locks[pid] = threading.Lock()
+            print("Connected:", pid)
+
+
+            if len(clients) == N and not ready:
+                ready = True
+                all_ready = list(clients.keys())
+            else:
+                all_ready = []
+
+
+        for p in all_ready:
+            send(p, {"type": "READY"})
+
+
+        if all_ready and MODE == "token":
+            send(1, {"type": "TOKEN"})
+
+
+        for line in reader:
+            message = json.loads(line)
+            target = message["to"]
+            payload = message["payload"]
+            send(target, payload)
+
+
+    except (OSError, ValueError, KeyError):
+        pass
+    finally:
+        if pid is not None:
+            with lock:
+                clients.pop(pid, None)
+                send_locks.pop(pid, None)
+            print("Disconnected:", pid)
+        conn.close()
+
+
+
+
+server = socket.socket()
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind(("127.0.0.1", 5000))
+server.listen()
+
+
+print("Relay server started:", MODE)
+
+
+while True:
+    conn, _ = server.accept()
+    threading.Thread(
+        target=handle, args=(conn,), daemon=True
+    ).start()
+—-------
+Ricart_process.py
+
+import socket
+import threading
+import json
+import sys
+import time
+
+
+pid = int(sys.argv[1])
+N = 3
+
+
+sock = socket.socket()
+sock.connect(("127.0.0.1", 5000))
+sock.sendall((json.dumps({"pid": pid}) + "\n").encode())
+
+
+send_lock = threading.Lock()
+condition = threading.Condition()
+ready = threading.Event()
+
+
+clock = 0
+state = "RELEASED"
+request_time = 0
+replies = set()
+deferred = []
+
+
+
+
+def send(to, payload):
+    message = {"to": to, "payload": payload}
+    with send_lock:
+        sock.sendall((json.dumps(message) + "\n").encode())
+
+
+
+
+def receive_messages():
+    global clock, state
+
+
+    reader = sock.makefile("r")
+
+
+    for line in reader:
+        msg = json.loads(line)
+        kind = msg["type"]
+
+
+        if kind == "READY":
+            ready.set()
+            continue
+
+
+        if kind == "REPLY":
+            with condition:
+                replies.add(msg["from"])
+                condition.notify_all()
+
+
+        elif kind == "REQUEST":
+            sender = msg["from"]
+            timestamp = msg["ts"]
+
+
+            with condition:
+                clock = max(clock, timestamp) + 1
+
+
+                defer = (
+                    state == "HELD"
+                    or (
+                        state == "WANTED"
+                        and (request_time, pid) < (timestamp, sender)
+                    )
+                )
+
+
+                if defer:
+                    deferred.append(sender)
+
+
+            if defer:
+                print(f"P{pid} defers reply to P{sender}")
+            else:
+                send(sender, {"type": "REPLY", "from": pid})
+
+
+
+
+threading.Thread(target=receive_messages, daemon=True).start()
+
+
+print(f"P{pid} connected; waiting for other processes...")
+ready.wait()
+print(f"P{pid} ready. Type r to request CS, q to quit.")
+
+
+while True:
+    command = input().strip().lower()
+
+
+    if command == "q":
+        break
+
+
+    if command != "r":
+        continue
+
+
+    with condition:
+        if state != "RELEASED":
+            print("Already requesting or using CS")
+            continue
+
+
+        clock += 1
+        request_time = clock
+        state = "WANTED"
+        replies.clear()
+
+
+    print(f"P{pid} sends REQUEST")
+    for other in range(1, N + 1):
+        if other != pid:
+            send(other, {
+                "type": "REQUEST",
+                "from": pid,
+                "ts": request_time
+            })
+
+
+    with condition:
+        while len(replies) < N - 1:
+            condition.wait()
+        state = "HELD"
+
+
+    print(f"P{pid} ENTERS CS")
+    time.sleep(2)
+    print(f"P{pid} EXITS CS")
+
+
+    with condition:
+        state = "RELEASED"
+        pending = deferred[:]
+        deferred.clear()
+
+
+    for other in pending:
+        send(other, {"type": "REPLY", "from": pid})
+
+
+sock.close()
+Terminal 1:
+python3 relay_server.py ricart
+Terminals 2, 3 and 4:
+python3 ricart_process.py 1
+python3 ricart_process.py 2
+python3 ricart_process.py 3
+—--------]]
+Token Ring:
+Token_process.py
+
+
+import socket
+import threading
+import json
+import sys
+import time
+
+
+pid = int(sys.argv[1])
+N = 3
+
+
+sock = socket.socket()
+sock.connect(("127.0.0.1", 5000))
+sock.sendall((json.dumps({"pid": pid}) + "\n").encode())
+
+
+send_lock = threading.Lock()
+state_lock = threading.Lock()
+ready = threading.Event()
+wants_cs = False
+running = True
+
+
+
+
+def send(to, payload):
+    message = {"to": to, "payload": payload}
+    with send_lock:
+        sock.sendall((json.dumps(message) + "\n").encode())
+
+
+
+
+def receive_messages():
+    global wants_cs
+
+
+    reader = sock.makefile("r")
+
+
+    for line in reader:
+        msg = json.loads(line)
+
+
+        if msg["type"] == "READY":
+            ready.set()
+
+
+        elif msg["type"] == "TOKEN":
+            print(f"\nP{pid} received TOKEN")
+
+
+            with state_lock:
+                enter = wants_cs
+                wants_cs = False
+
+
+            if enter:
+                print(f"P{pid} ENTERS CS")
+                time.sleep(2)
+                print(f"P{pid} EXITS CS")
+
+
+            next_pid = pid % N + 1
+            print(f"P{pid} passes TOKEN to P{next_pid}")
+            time.sleep(0.5)
+            send(next_pid, {"type": "TOKEN"})
+
+
+
+
+threading.Thread(target=receive_messages, daemon=True).start()
+
+
+print(f"P{pid} connecting...")
+ready.wait()
+print("Ready! Type r to request CS. Type q to quit.")
+
+
+while True:
+    command = input().strip().lower()
+
+
+    if command == "q":
+        print("Stop this process only after stopping the demo.")
+        break
+
+
+    if command == "r":
+        with state_lock:
+            wants_cs = True
+        print(f"P{pid} requested CS; waiting for TOKEN")
+
+
+sock.close()
+Run Token Ring
+Terminal 1:
+python3 relay_server.py token
+Terminals 2, 3 and 4:
+python3 token_process.py 1
+python3 token_process.py 2
+python3 token_process.py 3
+—----------]]
+Centralized Coordinator Algorithm:
+Coordinator_server.py
+
+
+import socket
+import threading
+import json
+
+
+clients = {}
+queue = []
+busy = False
+lock = threading.Lock()
+
+
+
+
+def send(conn, message, send_lock):
+    with send_lock:
+        conn.sendall((json.dumps(message) + "\n").encode())
+
+
+
+
+def grant_next():
+    global busy
+
+
+    if queue and not busy:
+        pid = queue[0]
+        busy = True
+        conn, send_lock = clients[pid]
+        print("Coordinator sends GRANT to", pid)
+        send(conn, {"type": "GRANT"}, send_lock)
+
+
+
+
+def handle(conn):
+    global busy
+
+
+    reader = conn.makefile("r")
+    pid = None
+    send_lock = threading.Lock()
+
+
+    try:
+        registration = json.loads(reader.readline())
+        pid = registration["pid"]
+
+
+        with lock:
+            clients[pid] = (conn, send_lock)
+
+
+        print("Process connected:", pid)
+
+
+        for line in reader:
+            msg = json.loads(line)
+
+
+            with lock:
+                if msg["type"] == "REQUEST":
+                    print(pid, "sends REQUEST")
+
+
+                    if pid not in queue:
+                        queue.append(pid)
+
+
+                    grant_next()
+
+
+                elif msg["type"] == "RELEASE":
+                    print(pid, "sends RELEASE")
+
+
+                    if queue and queue[0] == pid:
+                        queue.pop(0)
+                        busy = False
+                        grant_next()
+
+
+    except (OSError, ValueError, KeyError):
+        pass
+    finally:
+        with lock:
+            clients.pop(pid, None)
+            if pid in queue:
+                was_first = queue[0] == pid
+                queue.remove(pid)
+
+
+                if was_first:
+                    busy = False
+                    grant_next()
+
+
+        conn.close()
+        print("Disconnected:", pid)
+
+
+
+
+server = socket.socket()
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind(("127.0.0.1", 5001))
+server.listen()
+
+
+print("Coordinator server started on port 5001")
+
+
+while True:
+    conn, _ = server.accept()
+    threading.Thread(
+        target=handle, args=(conn,), daemon=True
+    ).start()
+—-----------//
+Coordinator_client.py
+
+
+import socket
+import json
+import sys
+import time
+
+
+pid = int(sys.argv[1])
+
+
+client = socket.socket()
+client.connect(("127.0.0.1", 5001))
+
+
+client.sendall(
+    (json.dumps({"pid": pid}) + "\n").encode()
+)
+
+
+reader = client.makefile("r")
+
+
+print(f"P{pid} connected.")
+print("Type r to request CS or q to quit.")
+
+
+while True:
+    command = input().strip().lower()
+
+
+    if command == "q":
+        break
+
+
+    if command != "r":
+        continue
+
+
+    client.sendall(
+        (json.dumps({"type": "REQUEST"}) + "\n").encode()
+    )
+
+
+    while True:
+        response = reader.readline()
+
+
+        if not response:
+            raise ConnectionError("Coordinator disconnected")
+
+
+        message = json.loads(response)
+
+
+        if message["type"] == "GRANT":
+            break
+
+
+    print(f"P{pid} ENTERS CS")
+    time.sleep(2)
+    print(f"P{pid} EXITS CS")
+
+
+    client.sendall(
+        (json.dumps({"type": "RELEASE"}) + "\n").encode()
+    )
+
+
+client.close()
+
+
+Run the Centralized Coordinator
+Terminal 1:
+python3 coordinator_server.py
+Terminals 2, 3 and 4:
+python3 coordinator_client.py 1
+python3 coordinator_client.py 2
+python3 coordinator_client.py 3
+—---------------]]]
+
+
+Ex-4
+Lamport Clock:
+class Process:
+
+
+    def __init__(self, name):
+        self.name = name
+        self.clock = 0
+
+
+    def event(self):
+        self.clock += 1
+        print(self.name, "event:", self.clock)
+
+
+    def send(self):
+        self.clock += 1
+        print(self.name, "sends message:", self.clock)
+        return self.clock
+
+
+    def receive(self, timestamp):
+        self.clock = max(self.clock, timestamp) + 1
+        print(self.name, "receives message:", self.clock)
+
+
+
+
+p1 = Process("P1")
+p2 = Process("P2")
+
+
+p1.event()
+
+
+timestamp = p1.send()
+
+
+p2.receive(timestamp)
+
+
+p2.event()
+—-------------------///
+Vector clock:
+
+
+class Process:
+
+
+    def __init__(self, pid, n):
+        self.pid = pid
+        self.clock = [0] * n
+
+
+    def event(self):
+        self.clock[self.pid] += 1
+        print("P", self.pid + 1, "event:", self.clock)
+
+
+    def send(self):
+        self.clock[self.pid] += 1
+        print("P", self.pid + 1, "sends:", self.clock)
+        return self.clock.copy()
+
+
+    def receive(self, received):
+        for i in range(len(self.clock)):
+            self.clock[i] = max(self.clock[i], received[i])
+
+
+        self.clock[self.pid] += 1
+
+
+        print("P", self.pid + 1, "receives:", self.clock)
+
+
+
+
+p1 = Process(0, 3)
+p2 = Process(1, 3)
+
+
+p1.event()
+
+
+message = p1.send()
+
+
+p2.receive(message)
+
+
+p2.event()
+
+
+—-----------////
