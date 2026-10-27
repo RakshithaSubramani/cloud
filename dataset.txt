@@ -1,0 +1,483 @@
+﻿# Q1. Basic client–server communication
+
+Server (`server.py`)
+
+import socket
+
+s = socket.socket()
+s.bind(("localhost", 12345))
+s.listen(1)
+
+print("Waiting for client...")
+c, addr = s.accept()
+
+msg = c.recv(1024).decode()
+print("Client:", msg)
+
+c.send("Message received".encode())
+
+c.close()
+s.close()
+
+
+
+Client (`client.py`)
+
+import socket
+
+s = socket.socket()
+s.connect(("localhost", 12345))
+
+msg = input("Enter message: ")
+s.send(msg.encode())
+
+print("Server:", s.recv(1024).decode())
+
+s.close()
+
+
+
+# Q2. Client enters marks; server calculates score, pass/fail and rank
+
+Server (`server.py`)
+
+import socket
+
+s = socket.socket()
+s.bind(("localhost", 12345))
+s.listen(1)
+
+c, addr = s.accept()
+marks = int(c.recv(1024).decode())
+
+students = [85, 72, 60, 45, 90]
+rank = 1
+
+for m in students:
+    if m > marks:
+        rank += 1
+
+result = "Score: " + str(marks)
+result += "\nResult: " + ("PASS" if marks >= 50 else "FAIL")
+result += "\nRank: " + str(rank)
+
+c.send(result.encode())
+c.close()
+s.close()
+
+```
+
+Client (`client.py`)
+
+import socket
+
+s = socket.socket()
+s.connect(("localhost", 12345))
+
+marks = input("Enter marks: ")
+s.send(marks.encode())
+
+print(s.recv(1024).decode())
+s.close()
+
+
+
+# Q3. Client–server communication using serialization and deserialization
+Server (`server.py`)
+import socket
+import pickle
+
+s = socket.socket()
+s.bind(("localhost", 12345))
+s.listen(1)
+
+c, addr = s.accept()
+
+data = c.recv(4096)
+obj = pickle.loads(data)
+
+print("Received:", obj)
+
+obj["status"] = "Processed"
+c.send(pickle.dumps(obj))
+
+c.close()
+s.close()
+
+
+
+Client (`client.py`)
+
+import socket
+import pickle
+
+s = socket.socket()
+s.connect(("localhost", 12345))
+
+data = {"name": "Rakshi", "marks": 90}
+s.send(pickle.dumps(data))
+
+result = pickle.loads(s.recv(4096))
+print("Server response:", result)
+
+s.close()
+
+
+
+# Q4. Client sends filename; server returns lines, words and file size
+
+Server (`server.py`)
+
+import socket
+
+s = socket.socket()
+s.bind(("localhost", 12345))
+s.listen(1)
+
+c, addr = s.accept()
+filename = c.recv(1024).decode()
+
+try:
+    with open(filename, "rb") as f:
+        data = f.read()
+
+    text = data.decode()
+    lines = len(text.splitlines())
+    words = len(text.split())
+    size = len(data)
+
+    result = "Lines: " + str(lines)
+    result += "\nWords: " + str(words)
+    result += "\nSize: " + str(size) + " bytes"
+
+except (FileNotFoundError, UnicodeDecodeError, OSError):
+    result = "File not found or cannot be read"
+
+c.send(result.encode())
+c.close()
+s.close()
+
+
+Client (`client.py`)
+import socket
+
+s = socket.socket()
+s.connect(("localhost", 12345))
+
+filename = input("Enter filename: ")
+s.send(filename.encode())
+
+print(s.recv(1024).decode())
+s.close()
+
+
+
+# Q5. Token Ring Algorithm
+#token ring
+for p in range(len(process)):
+    print("token with:",process[p])
+    print(process[p],"enter cs")
+    time.sleep(1)
+    print(process[p],'exit cs')
+    nexttoken=process[(p+1)%len(process)]
+    print("nexttoken with:",nexttoken)
+
+
+# Q6. RMI — Celsius to Fahrenheit using Pyro4
+
+import Pyro4
+
+@Pyro4.expose
+class Temperature:
+    def convert(self, celsius):
+        return (celsius * 9 / 5) + 32
+
+daemon = Pyro4.Daemon()
+uri = daemon.register(Temperature())
+
+print("Server ready")
+print("URI:", uri)
+
+daemon.requestLoop()
+
+
+Client (`client.py`)
+import Pyro4
+
+uri = input("Enter server URI: ")
+temp = Pyro4.Proxy(uri)
+
+c = float(input("Enter Celsius: "))
+f = temp.convert(c)
+
+print("Fahrenheit:", f)
+
+
+# Q7. Berkeley's Clock Synchronization Algorithm
+clocks = [10, 12, 8, 11]
+
+total = 0
+for t in clocks:
+    total += t
+
+avg = total / len(clocks)
+print("Average time:", avg)
+
+for i in range(len(clocks)):
+    diff = avg - clocks[i]
+
+    print("Clock", i + 1)
+    print("Current time:", clocks[i])
+    print("Adjustment:", diff)
+    print("Synchronized time:", clocks[i] + diff)
+    print()
+
+
+# Q8. Simulate clock drift over one minute
+for t in range(1, 61):
+    clock_a = t
+    clock_b = t * 1.01
+
+    drift = clock_b - clock_a
+
+    print("Time:", t, "seconds")
+    print("Clock A:", round(clock_a, 3), "seconds")
+    print("Clock B:", round(clock_b, 3), "seconds")
+    print("Drift:", round(drift * 1000, 2), "milliseconds")
+    print()
+
+print("Final drift:", round(drift * 1000, 2), "milliseconds")
+
+
+# Q9. Online Shopping Application using Pyro4
+
+## Server (`server.py`)
+import Pyro4
+
+@Pyro4.expose
+class Shop:
+    def calculate_bill(self, name, qty):
+        products = {
+            "Laptop": 50000,
+            "Mouse": 500,
+            "Keyboard": 1000
+        }
+
+        if name not in products or qty <= 0:
+            return "Invalid product or quantity"
+
+        total = products[name] * qty
+
+        if total >= 1000:
+            discount = total * 0.10
+        else:
+            discount = 0
+
+        final = total - discount
+
+        return {
+            "Product": name,
+            "Quantity": qty,
+            "Total": total,
+            "Discount": discount,
+            "Final Amount": final
+        }
+daemon = Pyro4.Daemon()
+uri = daemon.register(Shop())
+print("Server ready")
+print("URI:", uri)
+daemon.requestLoop()
+
+## Client (`client.py`)
+import Pyro4
+
+uri = input("Enter server URI: ")
+shop = Pyro4.Proxy(uri)
+name = input("Enter product (Laptop/Mouse/Keyboard): ")
+qty = int(input("Enter quantity: "))
+result = shop.calculate_bill(name, qty)
+
+if isinstance(result, dict):
+    print("Product:", result["Product"])
+    print("Quantity:", result["Quantity"])
+    print("Total:", result["Total"])
+    print("Discount:", result["Discount"])
+    print("Final Amount:", result["Final Amount"])
+else:
+    print(result)
+
+# Q10. Implementation of Lamport Logical Clock
+
+class Process:
+    def __init__(self,name):
+        self.name=name
+        self.clock=0
+
+    def event(self):
+        self.clock+=1
+        print(self.name,'event',self.clock)
+
+    def send(self):
+        self.clock+=1
+        print(self.name,'sends msg',self.clock)
+        return self.clock
+
+    def recieve(self,timestamp):
+        self.clock=max(self.clock,timestamp)
+        self.clock+=1
+        print(self.name,'recvs msg',self.clock)
+
+
+pr1=Process('p1')
+pr2=Process('p2')
+pr1.event()
+timestamp=pr1.send()
+pr2.recieve(timestamp)
+pr2.event()
+
+# Q11. Task Scheduler using Round Robin
+
+tasks = [4, 2, 6, 3, 5, 1]
+
+workers = [0, 0]
+count = [0, 0]
+
+for i in range(len(tasks)):
+    w = i % 2
+
+    start = workers[w]
+    finish = start + tasks[i]
+
+    workers[w] = finish
+    count[w] += 1
+
+    print("Task:", i + 1)
+    print("Worker:", w + 1)
+    print("Processing time:", tasks[i])
+    print("Start time:", start)
+    print("Completion time:", finish)
+    print()
+
+print("Worker 1 tasks:", count[0])
+print("Worker 2 tasks:", count[1])
+print("Worker 1 total time:", workers[0])
+print("Worker 2 total time:", workers[1])
+print("Overall completion time:", max(workers))
+Exercise 5 — Virtual Instances, Server Consolidation & Fault Tolerance
+1. Start the virtual machines
+* Open VMware Workstation Pro 17.
+* Power on your Ubuntu virtual machines.
+* Open Terminal using Ctrl + Alt + T.
+2. Install Apache on each web server VM
+Run these commands on VM1, VM2 and VM3.
+Install Apache
+sudo apt update
+sudo apt install apache2 -y
+sudo systemctl enable --now apache2
+sudo systemctl status apache2
+Press q to exit the status screen.
+3. Create a different webpage on each VM
+On VM1:
+echo '<h1>Hello from VM1</h1>' | sudo tee /var/www/html/index.html
+On VM2:
+echo '<h1>Hello from VM2</h1>' | sudo tee /var/www/html/index.html
+On VM3:
+echo '<h1>Hello from VM3</h1>' | sudo tee /var/www/html/index.html
+4. Test the webpage and find the IP address
+Run on each web server VM:
+curl http://localhost
+hostname -I
+* curl http://localhost → checks the webpage on the same VM.
+* hostname -I → gives the VM's IP address. Write it down!
+5. Configure the load balancer
+On your separate load balancer VM:
+sudo apt update
+sudo apt install haproxy -y
+sudo nano /etc/haproxy/haproxy.cfg
+Add this configuration at the end of the file. Replace the example IP addresses with the actual IPs of VM1, VM2 and VM3.
+frontend http_front
+    bind *:80
+    default_backend http_back
+
+
+backend http_back
+    balance roundrobin
+    server vm1 192.168.119.129:80 check
+    server vm2 192.168.119.130:80 check
+    server vm3 192.168.119.131:80 check
+Save: Ctrl + O → Enter → Ctrl + X.
+Then run:
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+sudo systemctl enable --now haproxy
+sudo systemctl restart haproxy
+sudo systemctl status haproxy
+
+Test the load balancer:
+hostname -I
+curl http://localhost
+curl http://LOAD_BALANCER_IP
+Replace LOAD_BALANCER_IP with the load balancer VM's actual IP address.
+
+6. Server consolidation — check resource usage
+top
+free -h
+df -h
+* top → CPU and running processes. Press q to exit.
+* free -h → memory (RAM) usage.
+* df -h → disk space usage.
+The idea is to move services or files to a suitable VM, verify they work, and then shut down unused VMs.
+7. Fault tolerance — backup and recovery
+Install the required tools on the primary and backup VMs:
+sudo apt update
+sudo apt install rsync openssh-server -y
+sudo systemctl enable --now ssh
+On the backup VM:
+mkdir -p ~/backup
+On the primary VM, replace USERNAME and BACKUP_VM_IP with the correct values:
+rsync -av /var/www/html/ USERNAME@BACKUP_VM_IP:/home/USERNAME/backup/
+On the backup VM, verify:
+ls -l ~/backup
+Also remember the VMware options:
+* Full Clone → creates a separate copy of a VM.
+* Snapshot → saves a VM's state so you can return to it later.
+Exercise 6 — Task Scheduling & Load Balancing
+1. Create the script
+Open Terminal on Ubuntu:
+nano script.sh
+Type:
+#!/bin/bash
+echo "Hello Selcia"
+Save: Ctrl + O → Enter → Ctrl + X.
+2. Make the script executable and test it
+chmod +x script.sh
+./script.sh
+Expected output:
+Hello Selcia
+3. Schedule the script using cron
+Open the cron editor:
+crontab -e
+If asked to choose an editor, select nano.
+Add this line at the bottom. Replace USERNAME with your actual Ubuntu username:
+* * * * * /bin/bash /home/USERNAME/script.sh >> /home/USERNAME/output.log 2>&1
+Save and exit: Ctrl + O → Enter → Ctrl + X.
+What does * * * * * mean? Run the script every minute.
+4. Check the scheduled output
+Wait one or two minutes, then run:
+cat output.log
+To watch new output appear:
+tail -f output.log
+Press Ctrl + C to stop watching.
+To check cron activity:
+grep CRON /var/log/syslog | tail
+5. Load balancing in Exercise 6
+Use the same HAProxy procedure from Exercise 5:
+1. Start all web server VMs.
+2. Make sure Apache is running on each web server.
+3. Find each web server's IP using hostname -I.
+4. Install HAProxy on the load balancer VM.
+5. Configure the frontend, backend and roundrobin algorithm.
+6. Validate the configuration and start HAProxy.
+7. Test using curl http://LOAD_BALANCER_IP.
+6. Optional advanced scheduling — nice
+nice -n 10 ./script.sh
+This runs the program with a lower CPU scheduling priority than a normal-priority process in typical Linux configurations. It does not schedule the program to run at a particular time.
